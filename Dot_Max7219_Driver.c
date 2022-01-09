@@ -151,18 +151,19 @@ void Rotate_Font(const uint8_t* In_data, uint8_t* Out_data)
 void Display_Test(uint8_t Test_font)
 {
   uint8_t Tx_Data[NUMBER_OF_DISPLAY*2];
-  uint8_t Display_Count, Row_count;
+  uint8_t Display_Count, Row_count,i;
   
-  uint8_t Font_to_print[8];
+  uint8_t Font_to_print[NUMBER_OF_DISPLAY][8];
   
-  Rotate_Font(cp437_font[Test_font],Font_to_print);
+  for(i = 0; i<NUMBER_OF_DISPLAY; i++)
+    Rotate_Font(cp437_font[Test_font+i],Font_to_print[i]);
   
   for(Row_count =1; Row_count<9;Row_count++)
   {
     for(Display_Count = 0; Display_Count <NUMBER_OF_DISPLAY ; Display_Count++)
     {
       Tx_Data[Display_Count*2]    = Row_count;
-      Tx_Data[(Display_Count*2)+1] = Font_to_print[Row_count-1];
+      Tx_Data[(Display_Count*2)+1] = Font_to_print[Display_Count][Row_count-1];
     }
     
     SPI_writeBytes(Tx_Data, (NUMBER_OF_DISPLAY*2));
@@ -182,7 +183,7 @@ int main()
     clearDisplay();
     Display_Test(i);
     sleep(2);
-    i++;
+    i+=4;
   }
 
   return 0;
