@@ -148,6 +148,57 @@ void Rotate_Font(const uint8_t* In_data, uint8_t* Out_data)
   }
 }
 
+uint8_t Display_data_for_4_Display(uint32_t* In_Data)
+{
+  uint8_t Tx_Data[NUMBER_OF_DISPLAY*2];
+  uint8_t Display_Count, Row_count;
+  
+  
+  for(Row_count =1; Row_count<9;Row_count++)
+  {
+    for(Display_Count = 0; Display_Count <NUMBER_OF_DISPLAY ; Display_Count++)
+    {
+      Tx_Data[Display_Count*2]    = Row_count;
+      Tx_Data[(Display_Count*2)+1] = In_Data[Row_count-1]>>((NUMBER_OF_DISPLAY-Display_Count-1)*8);
+    }
+    
+    SPI_writeBytes(Tx_Data, (NUMBER_OF_DISPLAY*2));
+  }
+  return 0;
+}
+
+void Display_data_for_4_Display_Test(const uint8_t* In_ptr)
+{
+  uint8_t i,j;
+  uint8_t Char_data[NUMBER_OF_DISPLAY][8];
+  uint32_t Data[8];
+  
+  for(j=0;j<NUMBER_OF_DISPLAY;j++)
+  {
+    Rotate_Font(cp437_font[In_ptr[j]],Char_data[j]);
+  }
+  
+  for(i=0;i<8;i++)
+  {
+    Data[i] = 0x0;
+    for(j=0;j<NUMBER_OF_DISPLAY;j++)
+    {
+      Data[i] |= Char_data[j][i]<<(NUMBER_OF_DISPLAY-j-1)*8;
+    }
+  }
+  
+  for(i=0;i<32;i++)
+  {
+    for(j=0;j<8;j++)
+    {
+      Data[j] = Data[j] << 1;
+    }
+    Display_data_for_4_Display(Data);
+    sleep(1);
+  }
+
+}
+
 void Display_Test(uint8_t Test_font)
 {
   uint8_t Tx_Data[NUMBER_OF_DISPLAY*2];
@@ -170,22 +221,25 @@ void Display_Test(uint8_t Test_font)
   }
 }
 
-int main()
+int main(void)
 {
-  uint8_t i = 48;
+  uint8_t j,i=(uint8_t)'0';
+  uint8_t Text_Array[4];
   initialiseDisplay();
   //Display_Test(65);
   //clearDisplay(&header);
 
   while (1)
   {
-
+    for(j=0;j<4;j++)
+      Text_Array[j]=i+j;
+      
     clearDisplay();
-    Display_Test(i);
+    Display_data_for_4_Display_Test(Text_Array);
+    //Display_Test(i);
     sleep(2);
     i+=4;
   }
-
   return 0;
 }
 
