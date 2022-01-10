@@ -199,6 +199,50 @@ void Display_data_for_4_Display_Test(const uint8_t* In_ptr)
 
 }
 
+void Scroll_text(const uint8_t* In_ptr)
+{
+  uint8_t i,j,k,t,r;
+  uint8_t Char_data[8];
+  //uint8_t Temp_Char_data[8];
+  uint32_t Data[8] = {0};
+
+  
+
+  
+  k=0;
+  r=0;
+  Rotate_Font(cp437_font[In_ptr[r]],Char_data);
+
+  do
+  {
+    
+    
+    for(i=0;i<32;i++)
+    {
+      for(j=0;j<8;j++)
+      {
+        Data[j] = Data[j] << 1;
+        t=(Char_data[j] & (1<<(7-k)))? 1: 0;
+        Data[j] |= t<<0;
+        
+        //Data[j] |= (1<<0);
+      }
+      k++;
+      if(k == 8)
+      {
+        k=0;
+        r++;
+        Rotate_Font(cp437_font[In_ptr[r]],Char_data);
+      }
+      Display_data_for_4_Display(Data);
+      sleep(1);
+      
+    }
+  }while(In_ptr!=NULL);
+
+}
+
+
 void Display_Test(uint8_t Test_font)
 {
   uint8_t Tx_Data[NUMBER_OF_DISPLAY*2];
@@ -226,20 +270,22 @@ int main(void)
   uint8_t j,i=(uint8_t)'0';
   uint8_t Text_Array[4];
   initialiseDisplay();
+  Scroll_text("Test String : 1");
   //Display_Test(65);
   //clearDisplay(&header);
-
+/*
   while (1)
   {
     for(j=0;j<4;j++)
       Text_Array[j]=i+j;
       
     clearDisplay();
-    Display_data_for_4_Display_Test(Text_Array);
+    Scroll_text("Test String : 1");
+    //Display_data_for_4_Display_Test(Text_Array);
     //Display_Test(i);
     sleep(2);
     i+=4;
   }
+  */
   return 0;
 }
-
