@@ -77,12 +77,14 @@ void SPI_writeBytes(uint8_t* data, uint8_t Lenght)
   memset (&spi, 0, sizeof(spi));
   memcpy (spiBufTx, data, Lenght);
   
-  //printf("SPI Data : ");
+  /*
+  printf("SPI Data : ");
   for(count =0; count<Lenght; count++)
   {
-    //printf(" %x",spiBufTx[count]);
+    printf(" %x",spiBufTx[count]);
   }
-  //printf("\n");
+  printf("\n");
+  */
   
   spi.tx_buf =(unsigned long)spiBufTx;
   spi.rx_buf =(unsigned long)spiBufRx;
