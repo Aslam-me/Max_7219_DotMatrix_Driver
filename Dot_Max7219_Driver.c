@@ -58,13 +58,13 @@ static uint16_t spiDelay = 0;
 
 int SPI_Open(char* dev)
 {
-  /*
-  if((spi_fd = open(dev, O_RDWR)) < 0)	// error: implicit declaration of function ‘open’
+  
+  if((spi_fd = filp_open(dev, O_RDWR, 0644)) < 0)	// error: implicit declaration of function ‘open’
   {
-    //printf("error opening %s\n",dev);	//implicit declaration of function ‘printf’
+    printk("error opening %s\n",dev);	//implicit declaration of function ‘printf’
     return -1;
   }
-  * */
+  
   return 0;
 }
 
@@ -73,7 +73,10 @@ void SPI_writeBytes(uint8_t* data, uint8_t Lenght)
   uint8_t spiBufTx [8];
   uint8_t spiBufRx [8];
   uint8_t count;
+  loff_t pos = 0;
+  int ret = 0;
   struct spi_ioc_transfer spi;
+  
   memset (&spi, 0, sizeof(spi));
   memcpy (spiBufTx, data, Lenght);
   
@@ -94,7 +97,8 @@ void SPI_writeBytes(uint8_t* data, uint8_t Lenght)
   spi.delay_usecs = spiDelay;
   spi.speed_hz = spiSpeed;
   spi.bits_per_word = spiBPW;
-  //ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi);
+  ret = kernel_write(spi_fd, &spi, sizeof(spi),&pos);
+  
 }
 
 void Send_Command_To_All_Dispaly(uint8_t Reg, uint8_t data)
@@ -316,6 +320,8 @@ static int __init ModuleInit(void) {
 
 	/* Initialize DotMatrixDisplay */
 	initialiseDisplay();
+	
+	Scroll_text("Hello, Kernel!");
 
 	return 0;
 
@@ -333,7 +339,8 @@ ClassError:
  */
 static void __exit ModuleExit(void) {
 	
-	//clearDisplay();
+	clearDisplay();
+	filp_close(spi_fd, NULL);
 	
 	cdev_del(&DotMatrixDisplay_device);
 	device_destroy(DotMatrixDisplay_class, DotMatrixDisplay_device_nr);
