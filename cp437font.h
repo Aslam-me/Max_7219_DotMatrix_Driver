@@ -1,7 +1,7 @@
 #ifndef CP437_FONT_H 
 #define CP437_FONT_H
 
-#include <stdint.h>
+#include <linux/types.h>
 
 const  uint8_t cp437_font [256][8] = {
   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, // 0x00
