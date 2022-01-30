@@ -83,6 +83,7 @@ void SPI_writeBytes(uint8_t* data, uint8_t Lenght)
   {
     printf(" %x",spiBufTx[count]);
   }
+  // Push test from RPi directly
   printf("\n");
   */
   
