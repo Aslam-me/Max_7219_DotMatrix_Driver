@@ -50,10 +50,6 @@ static char DotMatrixDisplay_buffer[255];
 #define NUMBER_OF_DISPLAY 0x4
 #define TOTAL_INITIAL_CMD_COUNT 0x5
 
-int spi_fd;
-struct sigaction act;
-static char *spiDevice = "/dev/spidev0.0";
-//static char *spiDevice = "/home/pi/Max_7219_DotMatrix_Driver/test.txt";
 static uint8_t spiBPW = 8;
 static uint32_t spiSpeed = 500000;
 static uint16_t spiDelay = 0;
@@ -61,18 +57,16 @@ static uint16_t spiDelay = 0;
 #define SPI_BUS_NUM 0
 static struct spi_device *Max7219_DotMatrixDriver;
 
-int SPI_Open(char* dev)
+int SPI_Init(void)
 {
-  struct spi_master *master;
-	u8 id;
-	u8 val[] = {0x75, 0x40};
+	struct spi_master *master;
 
 	/* Parameters for SPI device */
 	struct spi_board_info spi_device_info = {
-		.modalias = "bmp280",
-		.max_speed_hz = 1000000,
+		.modalias = "Max7219_DotMatrix",
+		.max_speed_hz = spiSpeed,
 		.bus_num = SPI_BUS_NUM,
-		.chip_select = 0,
+		.chip_select = SPI_BUS_NUM,
 		.mode = 3,
 	};
 
@@ -91,7 +85,7 @@ int SPI_Open(char* dev)
 		return -1;
 	}
 
-	Max7219_DotMatrixDriver -> bits_per_word = 8;
+	Max7219_DotMatrixDriver -> bits_per_word = spiBPW;
 
 	/* Setup the bus for device's parameters */
 	if(spi_setup(Max7219_DotMatrixDriver) != 0){
@@ -100,52 +94,13 @@ int SPI_Open(char* dev)
 		return -1;
 	}
 
-	/* Read Chip ID */
-	id = spi_w8r8(Max7219_DotMatrixDriver, 0xD0);
-	printk("Chip ID: 0x%x\n", id);
-
-	/* Write to config reg */
-	spi_write(Max7219_DotMatrixDriver, val, sizeof(8));
-	id = spi_w8r8(Max7219_DotMatrixDriver, 0xF5);
-	printk("Config Reg. value: 0x%x\n", id);
-
-	printk("Hello, Kernel!\n");
-
 	
 	return 0;
 }
 
 void SPI_writeBytes(uint8_t* data, uint8_t Lenght)
 {
-  uint8_t spiBufTx [8];
-  uint8_t spiBufRx [8];
-  uint8_t count;
-  loff_t pos = 0;
-  int ret = 0;
-  struct spi_ioc_transfer spi;
-  
-  memset (&spi, 0, sizeof(spi));
-  memcpy (spiBufTx, data, Lenght);
-  
-  /*
-  printf("SPI Data : ");
-  for(count =0; count<Lenght; count++)
-  {
-    printf(" %x",spiBufTx[count]);
-  }
-  // Push test from RPi directly
-  printf("\n");
-  */
-  
-  spi.tx_buf =(unsigned long)spiBufTx;
-  spi.rx_buf =(unsigned long)spiBufRx;
-  spi.len = Lenght;
-  
-  spi.delay_usecs = spiDelay;
-  spi.speed_hz = spiSpeed;
-  spi.bits_per_word = spiBPW;
-  ret = kernel_write(spi_fd, &spi, sizeof(spi),&pos);
-  
+  spi_write(Max7219_DotMatrixDriver, data, Lenght);
 }
 
 void Send_Command_To_All_Dispaly(uint8_t Reg, uint8_t data)
@@ -182,9 +137,10 @@ void clearDisplay(void)
 }
 
 
-void initialiseDisplay(void)
+int Initialise_Display(void)
 {
   uint8_t CMD_Count, Reg, data;
+  int ret;
   
   const uint8_t Init_CMD[5][2] = {{MAX7219_REG_SCANLIMIT,    0x7},
                                   {MAX7219_REG_DECODEMODE,   0x0},
@@ -192,16 +148,22 @@ void initialiseDisplay(void)
                                   {MAX7219_REG_DISPLAYTEST,  0x0},
                                   {MAX7219_REG_INTENSITY,    0x7}};
   
-  SPI_Open(spiDevice);
+  ret = SPI_Init();
   
-  for(CMD_Count = 0; CMD_Count < TOTAL_INITIAL_CMD_COUNT; CMD_Count++)
+  //Only execute if SPI can be intialised
+  if(ret >= 0)
   {
-    Reg =   Init_CMD[CMD_Count][0];
-    data =  Init_CMD[CMD_Count][1];
-    Send_Command_To_All_Dispaly(Reg,data);
+    for(CMD_Count = 0; CMD_Count < TOTAL_INITIAL_CMD_COUNT; CMD_Count++)
+    {
+      Reg =   Init_CMD[CMD_Count][0];
+      data =  Init_CMD[CMD_Count][1];
+      Send_Command_To_All_Dispaly(Reg,data);
+    }
+    
+    clearDisplay();
   }
   
-  clearDisplay();
+  return ret;
 
 }
 
@@ -248,6 +210,8 @@ void Scroll_text(const uint8_t* In_ptr)
   //uint8_t Temp_Char_data[8];
   uint32_t Data[8] = {0};
   
+  printk("Text Receive to display : %s",In_ptr);
+  
   k=0;
   r=0;
   Rotate_Font(cp437_font[In_ptr[r]],Char_data);
@@ -274,7 +238,7 @@ void Scroll_text(const uint8_t* In_ptr)
         Rotate_Font(cp437_font[In_ptr[r]],Char_data);
       }
       Display_data_for_4_Display(Data);
-      msleep(5);
+      msleep(30);
       
     }
   }while(In_ptr[r]!=NULL);
@@ -333,10 +297,14 @@ static struct file_operations fops = {
  * @brief This function is called, when the module is loaded into the kernel
  */
 static int __init ModuleInit(void) {
-	int i;
+	int i, ret;
 	
-	printk("Hello, Kernel!\n");
-	initialiseDisplay();
+	/* Initialize DotMatrixDisplay */
+	ret = Initialise_Display();
+	
+	//If error already found don't move further 
+	if(ret < 0)
+	  return ret;
 
 	/* Allocate a device nr */
 	if( alloc_chrdev_region(&DotMatrixDisplay_device_nr, 0, 1, DRIVER_NAME) < 0) {
@@ -362,14 +330,14 @@ static int __init ModuleInit(void) {
 
 	/* Regisering device to kernel */
 	if(cdev_add(&DotMatrixDisplay_device, DotMatrixDisplay_device_nr, 1) == -1) {
-		printk("lcd-driver - Registering of device to kernel failed!\n");
+		printk("DotMatrix-driver - Registering of device to kernel failed!\n");
 		goto AddError;
 	}
 
-	/* Initialize DotMatrixDisplay */
-	//initialiseDisplay();
 	
-	//Scroll_text("Hello, Kernel!");
+	
+	//Test
+	Scroll_text("Hello, Kernel!");
 
 	return 0;
 
@@ -388,7 +356,9 @@ ClassError:
 static void __exit ModuleExit(void) {
 	
 	clearDisplay();
-	filp_close(spi_fd, NULL);
+	
+	if(Max7219_DotMatrixDriver)
+		spi_unregister_device(Max7219_DotMatrixDriver);
 	
 	cdev_del(&DotMatrixDisplay_device);
 	device_destroy(DotMatrixDisplay_class, DotMatrixDisplay_device_nr);
