@@ -9,6 +9,7 @@
 /******/
 #include <linux/ioctl.h>
 #include <linux/spi/spidev.h>
+#include <linux/spi/spi.h>
 #include "cp437font.h"
 #include "Dot_Max7219_Driver.h"
 /***************/
@@ -51,26 +52,67 @@ static char DotMatrixDisplay_buffer[255];
 
 int spi_fd;
 struct sigaction act;
-//static char *spiDevice = "/dev/spidev0.0";
-static char *spiDevice = "/home/pi/Max_7219_DotMatrix_Driver/test.txt";
+static char *spiDevice = "/dev/spidev0.0";
+//static char *spiDevice = "/home/pi/Max_7219_DotMatrix_Driver/test.txt";
 static uint8_t spiBPW = 8;
 static uint32_t spiSpeed = 500000;
 static uint16_t spiDelay = 0;
 
+#define SPI_BUS_NUM 0
+static struct spi_device *Max7219_DotMatrixDriver;
+
 int SPI_Open(char* dev)
 {
-  
-  if((spi_fd = filp_open(dev, O_RDWR , 666)) < 0)	// error: implicit declaration of function ‘open’
-  {
-    printk("error opening %s\n",dev);	//implicit declaration of function ‘printf’
-    return -1;
-  }
-  else
-  {
-    printk("SPI Device file opened successfully");
-  }
-  
-  return 0;
+  struct spi_master *master;
+	u8 id;
+	u8 val[] = {0x75, 0x40};
+
+	/* Parameters for SPI device */
+	struct spi_board_info spi_device_info = {
+		.modalias = "bmp280",
+		.max_speed_hz = 1000000,
+		.bus_num = SPI_BUS_NUM,
+		.chip_select = 0,
+		.mode = 3,
+	};
+
+	/* Get access to spi bus */
+	master = spi_busnum_to_master(SPI_BUS_NUM);
+	/* Check if we could get the master */
+	if(!master) {
+		printk("There is no spi bus with Nr. %d\n", SPI_BUS_NUM);
+		return -1;
+	}
+
+	/* Create new SPI device */
+	Max7219_DotMatrixDriver = spi_new_device(master, &spi_device_info);
+	if(!Max7219_DotMatrixDriver) {
+		printk("Could not create device!\n");
+		return -1;
+	}
+
+	Max7219_DotMatrixDriver -> bits_per_word = 8;
+
+	/* Setup the bus for device's parameters */
+	if(spi_setup(Max7219_DotMatrixDriver) != 0){
+		printk("Could not change bus setup!\n");
+		spi_unregister_device(Max7219_DotMatrixDriver);
+		return -1;
+	}
+
+	/* Read Chip ID */
+	id = spi_w8r8(Max7219_DotMatrixDriver, 0xD0);
+	printk("Chip ID: 0x%x\n", id);
+
+	/* Write to config reg */
+	spi_write(Max7219_DotMatrixDriver, val, sizeof(8));
+	id = spi_w8r8(Max7219_DotMatrixDriver, 0xF5);
+	printk("Config Reg. value: 0x%x\n", id);
+
+	printk("Hello, Kernel!\n");
+
+	
+	return 0;
 }
 
 void SPI_writeBytes(uint8_t* data, uint8_t Lenght)
