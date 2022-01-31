@@ -51,7 +51,8 @@ static char DotMatrixDisplay_buffer[255];
 
 int spi_fd;
 struct sigaction act;
-static char *spiDevice = "/dev/spidev0.0";
+//static char *spiDevice = "/dev/spidev0.0";
+static char *spiDevice = "/home/pi/Max_7219_DotMatrix_Driver/test.txt";
 static uint8_t spiBPW = 8;
 static uint32_t spiSpeed = 500000;
 static uint16_t spiDelay = 0;
@@ -59,10 +60,14 @@ static uint16_t spiDelay = 0;
 int SPI_Open(char* dev)
 {
   
-  if((spi_fd = filp_open(dev, O_RDWR, 0644)) < 0)	// error: implicit declaration of function ‘open’
+  if((spi_fd = filp_open(dev, O_RDWR , 666)) < 0)	// error: implicit declaration of function ‘open’
   {
     printk("error opening %s\n",dev);	//implicit declaration of function ‘printf’
     return -1;
+  }
+  else
+  {
+    printk("SPI Device file opened successfully");
   }
   
   return 0;
@@ -227,7 +232,7 @@ void Scroll_text(const uint8_t* In_ptr)
         Rotate_Font(cp437_font[In_ptr[r]],Char_data);
       }
       Display_data_for_4_Display(Data);
-     // sleep(1);
+      msleep(5);
       
     }
   }while(In_ptr[r]!=NULL);
@@ -289,6 +294,7 @@ static int __init ModuleInit(void) {
 	int i;
 	
 	printk("Hello, Kernel!\n");
+	initialiseDisplay();
 
 	/* Allocate a device nr */
 	if( alloc_chrdev_region(&DotMatrixDisplay_device_nr, 0, 1, DRIVER_NAME) < 0) {
@@ -319,9 +325,9 @@ static int __init ModuleInit(void) {
 	}
 
 	/* Initialize DotMatrixDisplay */
-	initialiseDisplay();
+	//initialiseDisplay();
 	
-	Scroll_text("Hello, Kernel!");
+	//Scroll_text("Hello, Kernel!");
 
 	return 0;
 
