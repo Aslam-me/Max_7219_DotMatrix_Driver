@@ -51,8 +51,8 @@ static char DotMatrixDisplay_buffer[255];
 
 int spi_fd;
 struct sigaction act;
-//static char *spiDevice = "/dev/spidev0.0";
-static char *spiDevice = "/home/pi/Max_7219_DotMatrix_Driver/test.txt";
+static char *spiDevice = "/dev/spidev0.0";
+//static char *spiDevice = "/home/pi/Max_7219_DotMatrix_Driver/test.txt";
 static uint8_t spiBPW = 8;
 static uint32_t spiSpeed = 500000;
 static uint16_t spiDelay = 0;
