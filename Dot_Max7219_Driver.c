@@ -238,7 +238,7 @@ void Scroll_text(const uint8_t* In_ptr)
         Rotate_Font(cp437_font[In_ptr[r]],Char_data);
       }
       Display_data_for_4_Display(Data);
-      msleep(30);
+      msleep(35);
       
     }
   }while(In_ptr[r]!=NULL);
@@ -253,9 +253,14 @@ void Scroll_text(const uint8_t* In_ptr)
  */
 static ssize_t driver_write(struct file *File, const char *user_buffer, size_t count, loff_t *offs) {
 	int to_copy, not_copied, delta, i;
+	//char DotMatrixDisplay_buffer[255];
+	
+	memset(DotMatrixDisplay_buffer,0, sizeof(DotMatrixDisplay_buffer)); 
 
 	/* Get amount of data to copy */
 	to_copy = min(count, sizeof(DotMatrixDisplay_buffer));
+	
+	printk("Size to copy : %d",to_copy);
 
 	/* Copy data to user */
 	not_copied = copy_from_user(DotMatrixDisplay_buffer, user_buffer, to_copy);
@@ -265,7 +270,9 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
 
 	/* Set the new data to the display */
 	
-	DotMatrixDisplay_buffer[to_copy] = NULL;
+	//DotMatrixDisplay_buffer[to_copy] = NULL;
+	
+	printk("Kernel Data : %s",DotMatrixDisplay_buffer);
 
 	Scroll_text(DotMatrixDisplay_buffer);
 
@@ -366,7 +373,7 @@ static void __exit ModuleExit(void) {
 	device_destroy(DotMatrixDisplay_class, DotMatrixDisplay_device_nr);
 	class_destroy(DotMatrixDisplay_class);
 	unregister_chrdev_region(DotMatrixDisplay_device_nr, 1);
-	printk("Goodbye, Kernel\n");
+	printk("Kernel Deregistered\n");
 }
 
 module_init(ModuleInit);
