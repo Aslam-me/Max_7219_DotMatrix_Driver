@@ -264,8 +264,10 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
 	delta = to_copy - not_copied;
 
 	/* Set the new data to the display */
+	
+	DotMatrixDisplay_buffer[to_copy] = NULL;
 
-	Scroll_text(DotMatrixDisplay_buffer[i]);
+	Scroll_text(DotMatrixDisplay_buffer);
 
 	return delta;
 }
