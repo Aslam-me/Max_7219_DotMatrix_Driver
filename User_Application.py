@@ -2,7 +2,7 @@ import time
 import socket
 
 UDP_IP = '192.168.0.44'
-UDP_PORT = 16350
+UDP_PORT = 16000
 
 def print_in_Dot_Matrix_Display(string):
     
@@ -21,5 +21,5 @@ if __name__ == "__main__":
 
     while True:
         data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-        print("received message: %s" % data)
-        print_in_Dot_Matrix_Display(data)
+        print("received message: %s" % data.decode("utf-8"))
+        print_in_Dot_Matrix_Display(data.decode("utf-8"))
