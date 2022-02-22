@@ -50,9 +50,10 @@ static char DotMatrixDisplay_buffer[255];
 #define NUMBER_OF_DISPLAY 0x4
 #define TOTAL_INITIAL_CMD_COUNT 0x5
 
+#define SCROLL_DELAY 35
+
 static uint8_t spiBPW = 8;
 static uint32_t spiSpeed = 500000;
-static uint16_t spiDelay = 0;
 
 #define SPI_BUS_NUM 0
 static struct spi_device *Max7219_DotMatrixDriver;
@@ -227,8 +228,6 @@ void Scroll_text(const uint8_t* In_ptr)
         Data[j] = Data[j] << 1;
         t=(Char_data[j] & (1<<(7-k)))? 1: 0;
         Data[j] |= t<<0;
-        
-        //Data[j] |= (1<<0);
       }
       k++;
       if(k == 8)
@@ -238,7 +237,7 @@ void Scroll_text(const uint8_t* In_ptr)
         Rotate_Font(cp437_font[In_ptr[r]],Char_data);
       }
       Display_data_for_4_Display(Data);
-      msleep(35);
+      msleep(SCROLL_DELAY);
       
     }
   }while(In_ptr[r]!=NULL);
@@ -252,7 +251,7 @@ void Scroll_text(const uint8_t* In_ptr)
  * @brief Write data to buffer
  */
 static ssize_t driver_write(struct file *File, const char *user_buffer, size_t count, loff_t *offs) {
-	int to_copy, not_copied, delta, i;
+	int to_copy, not_copied, delta;
 	//char DotMatrixDisplay_buffer[255];
 	
 	memset(DotMatrixDisplay_buffer,0, sizeof(DotMatrixDisplay_buffer)); 
@@ -306,7 +305,7 @@ static struct file_operations fops = {
  * @brief This function is called, when the module is loaded into the kernel
  */
 static int __init ModuleInit(void) {
-	int i, ret;
+	int ret;
 	
 	/* Initialize DotMatrixDisplay */
 	ret = Initialise_Display();
@@ -346,7 +345,7 @@ static int __init ModuleInit(void) {
 	
 	
 	//Test
-	Scroll_text("Hello, Kernel!");
+	printk("Display Kernel Loaded");
 
 	return 0;
 
