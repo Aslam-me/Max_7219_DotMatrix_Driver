@@ -240,7 +240,7 @@ void Scroll_text(const uint8_t* In_ptr)
       msleep(SCROLL_DELAY);
       
     }
-  }while(In_ptr[r]!=NULL);
+  }while(In_ptr[r]!='\0');
 
 }
 
